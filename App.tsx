@@ -1,118 +1,85 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Text, FlatList, Alert } from 'react-native';
+import Card from './src/Card';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const ALPHABET = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const App: React.FC = () => {
+  const [cards, setCards] = useState<string[]>([]);
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+  const [matches, setMatches] = useState(0);
+  const [attempts, setAttempts] = useState(0);
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+  useEffect(() => {
+    initializeGame();
+  }, []);
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+  const initializeGame = () => {
+    const shuffledAlphabet = [...ALPHABET, ...ALPHABET].sort(() => Math.random() - 0.5);
+    setCards(shuffledAlphabet);
+  };
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const handleCardPress = (index: number) => {
+    if (selectedIndices.length === 2 || selectedIndices.includes(index) || cards[index] === '') {
+      return; // Limit to 2 cards selected at a time and ignore already selected cards or empty cards
+    }
+  
+    const newSelectedIndices = [...selectedIndices, index];
+    setSelectedIndices(newSelectedIndices);
+  
+    if (newSelectedIndices.length === 2) {
+      const [firstIndex, secondIndex] = newSelectedIndices;
+      if (cards[firstIndex] === cards[secondIndex]) {
+        setMatches(matches + 1);
+        Alert.alert('Matched!');
+        
+        // Mark matched cards as disabled
+        const updatedCards = [...cards];
+        updatedCards[firstIndex] = ''; // Set card value to empty string
+        updatedCards[secondIndex] = ''; // Set card value to empty string
+        setCards(updatedCards);
+      } else {
+        Alert.alert('Not a match!');
+      }
+      setAttempts(attempts + 1);
+  
+      // Reset selected cards after a delay
+      setTimeout(() => setSelectedIndices([]), 1000);
+    }
+  };
+  
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const renderCard = ({ item, index }: { item: string; index: number }) => {
+    const isHidden = !(selectedIndices.includes(index) || cards[index] === '');
+    return <Card value={item} isHidden={isHidden} onPress={() => handleCardPress(index)} />;
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <View style={styles.container}>
+        <Text style={styles.title}>Memory Game</Text>
+      <Text>Matches: {matches}</Text>
+      <Text>Attempts: {attempts}</Text>
+      <FlatList
+        data={cards}
+        renderItem={renderCard}
+        keyExtractor={(item, index) => `${item}-${index}`}
+        numColumns={4}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 50,
   },
-  sectionTitle: {
+  title: {
     fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+    fontWeight: 'bold',
+},
 });
 
 export default App;
